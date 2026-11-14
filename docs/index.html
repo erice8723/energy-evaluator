@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 儲能建置與節費評估系統</title>
+  <meta name="description" content="儲能設備規格評估、電費節省試算、IRR 與 15 年投資現金流模擬工具">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ══ 頁首 ══════════════════════════════════════════════ -->
+<header class="site-header" role="banner">
+  <div>
+    <div class="logo">⚡ AI 儲能建置與節費評估系統</div>
+    <div class="subtitle">PCS &amp; 電池規格 ／ 電費節省試算 ／ IRR &amp; 15 年現金流模擬</div>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-secondary" id="btn-reset" title="重設為預設值">↺ 重設預設值</button>
+  </div>
+</header>
+
+<!-- ══ 主要佈局 ══════════════════════════════════════════ -->
+<div class="app-layout">
+
+  <!-- ━━ 左側參數面板 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+  <aside class="sidebar" role="complementary" aria-label="參數設定">
+
+    <div class="section-title">參數設定</div>
+
+    <!-- 1. 設備設定 -->
+    <div class="param-group">
+      <div class="param-group-title">📦 儲能設備設定</div>
+
+      <div class="form-row">
+        <label class="form-label" for="pcs50qty">50 kW PCS 數量</label>
+        <input class="param-input" type="number" id="pcs50qty" min="0" max="99" step="1" value="1" aria-describedby="err-pcs50qty">
+        <span class="form-unit">台</span>
+      </div>
+      <div class="form-error" id="err-pcs50qty"></div>
+
+      <div class="form-row">
+        <label class="form-label" for="pcs100qty">100 kW PCS 數量</label>
+        <input class="param-input" type="number" id="pcs100qty" min="0" max="99" step="1" value="1" aria-describedby="err-pcs100qty">
+        <span class="form-unit">台</span>
+      </div>
+      <div class="form-error" id="err-pcs100qty"></div>
+
+      <div class="form-row">
+        <label class="form-label" for="bat128qty">128 kWh 電池數量</label>
+        <input class="param-input" type="number" id="bat128qty" min="0" max="99" step="1" value="1" aria-describedby="err-bat128qty">
+        <span class="form-unit">組</span>
+      </div>
+      <div class="form-error" id="err-bat128qty"></div>
+
+      <div class="form-row">
+        <label class="form-label" for="bat256qty">256 kWh 電池數量</label>
+        <input class="param-input" type="number" id="bat256qty" min="0" max="99" step="1" value="1" aria-describedby="err-bat256qty">
+        <span class="form-unit">組</span>
+      </div>
+      <div class="form-error" id="err-bat256qty"></div>
+    </div>
+
+    <!-- 2. 技術參數 -->
+    <div class="param-group">
+      <div class="param-group-title">⚙ 技術參數</div>
+
+      <div class="form-row">
+        <label class="form-label" for="dod">DOD 放電深度</label>
+        <input class="param-input" type="number" id="dod" min="50" max="100" step="1" value="80" aria-describedby="err-dod">
+        <span class="form-unit">%</span>
+      </div>
+      <div class="form-error" id="err-dod"></div>
+
+      <div class="form-row">
+        <label class="form-label" for="rte">往返效率（RTE）</label>
+        <input class="param-input" type="number" id="rte" min="50" max="100" step="1" value="90" aria-describedby="err-rte">
+        <span class="form-unit">%</span>
+      </div>
+      <div class="form-error" id="err-rte"></div>
+
+      <div class="form-row">
+        <label class="form-label" for="degradeRate">年度容量衰減率</label>
+        <input class="param-input" type="number" id="degradeRate" min="0" max="10" step="0.1" value="2" aria-describedby="err-degradeRate">
+        <span class="form-unit">%</span>
+      </div>
+      <div class="form-error" id="err-degradeRate"></div>
+
+      <div class="form-row">
+        <label class="form-label" for="dischargeHours">每日放電時數</label>
+        <input class="param-input" type="number" id="dischargeHours" min="0.5" max="12" step="0.5" value="4" aria-describedby="err-dischargeHours">
+        <span class="form-unit">h</span>
+      </div>
+      <div class="form-error" id="err-dischargeHours"></div>
+
+      <div class="form-row">
+        <label class="form-label" for="operatingDays">年度運轉天數</label>
+        <input class="param-input" type="number" id="operatingDays" min="1" max="365" step="1" value="300" aria-describedby="err-operatingDays">
+        <span class="form-unit">天</span>
+      </div>
+      <div class="form-error" id="err-operatingDays"></div>
+    </div>
+
+    <!-- 3. 電價設定 -->
+    <div class="param-group">
+      <div class="param-group-title">💡 電價設定 <span class="tag tag-demo">示範費率</span></div>
+      <p style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">
+        費率來源：示範值（參考台電高壓時間電價），<strong style="color:var(--accent-yellow)">非現行正式電價</strong>，請依實際費率調整。
+      </p>
+
+      <div class="form-row">
+        <label class="form-label" for="peakRate">尖峰電價</label>
+        <input class="param-input" type="number" id="peakRate" min="0.01" max="99.99" step="0.01" value="4.08" aria-describedby="err-peakRate">
+        <span class="form-unit">NT$/kWh</span>
+      </div>
+      <div class="form-error" id="err-peakRate"></div>
+
+      <div class="form-row">
+        <label class="form-label" for="offPeakRate">離峰電價</label>
+        <input class="param-input" type="number" id="offPeakRate" min="0.01" max="99.99" step="0.01" value="1.68" aria-describedby="err-offPeakRate">
+        <span class="form-unit">NT$/kWh</span>
+      </div>
+      <div class="form-error" id="err-offPeakRate"></div>
+
+      <div class="form-row">
+        <label class="form-label" for="originalAnnualBill">原年度總電費</label>
+        <input class="param-input" type="number" id="originalAnnualBill" min="1" max="999999999" step="1000" value="6000000" aria-describedby="err-originalAnnualBill" style="width:110px">
+        <span class="form-unit">NT$</span>
+      </div>
+      <div class="form-error" id="err-originalAnnualBill"></div>
+
+      <div class="form-row">
+        <label class="form-label" for="annualBasicSaving">年度基本電費節省估算 <span class="tag tag-manual">人工估算</span></label>
+        <input class="param-input" type="number" id="annualBasicSaving" min="0" max="999999999" step="1000" value="120000" aria-describedby="err-annualBasicSaving" style="width:110px">
+        <span class="form-unit">NT$</span>
+      </div>
+      <div class="form-error" id="err-annualBasicSaving"></div>
+    </div>
+
+    <!-- 4. 財務設定 -->
+    <div class="param-group">
+      <div class="param-group-title">💰 財務設定</div>
+
+      <div class="form-row">
+        <label class="form-label" for="initialCost">初始建置成本</label>
+        <input class="param-input" type="number" id="initialCost" min="1" max="999999999" step="10000" value="8000000" aria-describedby="err-initialCost" style="width:110px">
+        <span class="form-unit">NT$</span>
+      </div>
+      <div class="form-error" id="err-initialCost"></div>
+
+      <div class="form-row">
+        <label class="form-label" for="annualOM">年度維運費</label>
+        <input class="param-input" type="number" id="annualOM" min="0" max="999999999" step="1000" value="80000" aria-describedby="err-annualOM" style="width:110px">
+        <span class="form-unit">NT$</span>
+      </div>
+      <div class="form-error" id="err-annualOM"></div>
+
+      <div class="form-row">
+        <label class="form-label" for="annualInsurance">年度保險費</label>
+        <input class="param-input" type="number" id="annualInsurance" min="0" max="999999999" step="1000" value="40000" aria-describedby="err-annualInsurance" style="width:110px">
+        <span class="form-unit">NT$</span>
+      </div>
+      <div class="form-error" id="err-annualInsurance"></div>
+
+      <div class="form-row">
+        <label class="form-label" for="investmentYears">投資年限</label>
+        <input class="param-input" type="number" id="investmentYears" min="1" max="50" step="1" value="15" aria-describedby="err-investmentYears">
+        <span class="form-unit">年</span>
+      </div>
+      <div class="form-error" id="err-investmentYears"></div>
+    </div>
+
+    <!-- 5. 分潤設定 -->
+    <div class="param-group">
+      <div class="param-group-title">🤝 分潤設定（投資方：業主）</div>
+      <div class="form-row">
+        <label class="form-label" for="splitRatio">流動節費分潤比例</label>
+        <select class="param-select" id="splitRatio" aria-label="分潤比例選擇">
+          <option value="80:20">80:20（投資方較多）</option>
+          <option value="70:30">70:30</option>
+        </select>
+      </div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">
+        ※ 年度基本電費節省全數歸業主，不納入流動節費分潤計算。
+      </p>
+    </div>
+
+  </aside>
+
+  <!-- ━━ 右側主要內容 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+  <main class="main-content" role="main">
+
+    <!-- 全域錯誤 -->
+    <div id="global-msg" role="alert" aria-live="polite"></div>
+
+    <!-- KPI 卡片 -->
+    <div class="section-title">核心評估結果</div>
+    <div id="kpi-split-label"></div>
+    <div class="kpi-grid" role="region" aria-label="關鍵績效指標">
+
+      <div class="kpi-card">
+        <div class="kpi-label">PCS 總功率</div>
+        <div class="kpi-value" id="kpi-pcs">—</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">電池總容量</div>
+        <div class="kpi-value" id="kpi-battery">—</div>
+      </div>
+
+      <div class="kpi-card green">
+        <div class="kpi-label">年度流動節費（首年）</div>
+        <div class="kpi-value" id="kpi-flow-saving">—</div>
+      </div>
+
+      <div class="kpi-card green">
+        <div class="kpi-label">年度基本電費節省估算 <span class="tag tag-manual" style="font-size:9px">人工估算</span></div>
+        <div class="kpi-value" id="kpi-basic-saving">—</div>
+      </div>
+
+      <div class="kpi-card yellow">
+        <div class="kpi-label">投資方 IRR</div>
+        <div class="kpi-value" id="kpi-irr">—</div>
+        <div class="kpi-note" id="kpi-irr-note"></div>
+      </div>
+
+      <div class="kpi-card yellow">
+        <div class="kpi-label">投資回收年限</div>
+        <div class="kpi-value" id="kpi-payback">—</div>
+        <div class="kpi-note" id="kpi-payback-note"></div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">業主年度節費（首年）</div>
+        <div class="kpi-value" id="kpi-owner-saving">—</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">業主節費比例（首年）</div>
+        <div class="kpi-value" id="kpi-owner-ratio">—</div>
+      </div>
+
+    </div>
+
+    <!-- 分潤比較 -->
+    <div class="content-card">
+      <div class="content-card-title">
+        📊 兩種分潤比例比較（80:20 vs 70:30）
+      </div>
+      <div class="table-wrap">
+        <table aria-label="分潤比例比較表">
+          <thead>
+            <tr>
+              <th style="text-align:left">項目</th>
+              <th>方案一</th>
+              <th>方案二</th>
+            </tr>
+          </thead>
+          <tbody id="split-compare-body">
+            <tr><td colspan="3" style="text-align:center;color:var(--text-muted)">計算中…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 15 年現金流表 -->
+    <div class="content-card">
+      <div class="content-card-title">
+        📋 逐年現金流明細（投資方視角）
+      </div>
+      <div class="table-wrap">
+        <table aria-label="逐年現金流明細表">
+          <thead>
+            <tr>
+              <th>年度</th>
+              <th>容量保留率</th>
+              <th>每日放電量<br><small>(kWh)</small></th>
+              <th>年度流動節費<br><small>(NT$)</small></th>
+              <th>投資方收益<br><small>(NT$)</small></th>
+              <th>維運+保險<br><small>(NT$)</small></th>
+              <th>當年淨現金流<br><small>(NT$)</small></th>
+              <th>累計現金流<br><small>(NT$)</small></th>
+            </tr>
+          </thead>
+          <tbody id="cashflow-tbody">
+            <tr><td colspan="8" style="text-align:center;color:var(--text-muted)">計算中…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 累計現金流圖 -->
+    <div class="content-card">
+      <div class="content-card-title">📈 累計現金流走勢圖（投資方）</div>
+      <div class="chart-container" id="cashflow-chart" aria-label="累計現金流走勢圖" style="padding:4px 0;"></div>
+      <div class="chart-label">紅色虛線 = 損益平衡點（累計現金流 = 0）；綠點 = 已回收，紅點 = 未回收</div>
+    </div>
+
+    <!-- 模擬 AMI 資料摘要 -->
+    <div class="content-card">
+      <div class="content-card-title">
+        📡 示範 AMI 用電摘要
+        <span class="badge">⚠ 模擬資料</span>
+      </div>
+      <div id="ami-summary">載入中…</div>
+      <div class="divider"></div>
+      <div class="content-card-title" style="font-size:12px;margin-bottom:8px;">典型日負載曲線（15 分鐘間隔示範）</div>
+      <div class="chart-container" id="ami-chart" aria-label="典型日負載曲線" style="padding:4px 0;height:160px;"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ 頁尾 ════════════════════════════════════════════════ -->
+<footer class="site-footer" role="contentinfo">
+  <p>AI 儲能建置與節費評估系統 ／ 所有計算結果均為示範用途，電價數據非台電現行正式費率。</p>
+  <p style="margin-top:4px;">使用原生 HTML／CSS／JavaScript，無外部套件依賴。</p>
+</footer>
+
+<!-- 依序載入：模擬資料 → 計算函式 → 互動邏輯 -->
+<script src="sample-data.js"></script>
+<script src="calculations.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
